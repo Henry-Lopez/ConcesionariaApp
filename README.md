@@ -89,3 +89,9 @@ mvn spring-boot:run
 /api/reportes
 
 etc.
+
+---
+## Implementacion de la base de datos
+
+- Archivo de la base de datos creada en MySql en el txt db(2).
+- Copiar y Ejecutar en cualquier entorno de base de datos, nosotros utilizamos DataGrip.
