@@ -95,3 +95,4 @@ etc.
 
 - Archivo de la base de datos creada en MySql en el txt db(2).
 - Copiar y Ejecutar en cualquier entorno de base de datos, nosotros utilizamos DataGrip.
+- https://github.com/Henry-Lopez/ConcesionariaApp/blob/7cfffb4849bcb94ae401c0f0882ebf426879df52/db%20(2).txt
