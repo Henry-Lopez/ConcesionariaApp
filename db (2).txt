@@ -1,0 +1,3048 @@
+﻿use db2;
+
+
+
+-- TABLA: Marca
+CREATE TABLE marca (
+    id_marca INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL
+);
+
+-- TABLA: Modelo
+CREATE TABLE modelo (
+    id_modelo INT AUTO_INCREMENT PRIMARY KEY,
+    id_marca INT,
+    nombre_modelo VARCHAR(100),
+    potencia_fiscal VARCHAR(50),
+    cilindrada VARCHAR(50),
+    nro_puertas INT,
+    nro_ruedas INT,
+    capacidad_pasajeros INT,
+    precio_base DECIMAL(10,2),
+    descuento DECIMAL(10,2),
+    FOREIGN KEY (id_marca) REFERENCES marca(id_marca)
+);
+
+-- TABLA: Equipo
+CREATE TABLE equipo (
+    id_equipo INT AUTO_INCREMENT PRIMARY KEY,
+    descripcion VARCHAR(100),
+    precio DECIMAL(10,2)
+);
+
+-- Equipamiento de serie
+CREATE TABLE modelo_equipo_serie (
+    id_modelo INT,
+    id_equipo INT,
+    PRIMARY KEY (id_modelo, id_equipo),
+    FOREIGN KEY (id_modelo) REFERENCES modelo(id_modelo),
+    FOREIGN KEY (id_equipo) REFERENCES equipo(id_equipo)
+);
+
+-- Equipamiento extra disponible para modelo
+CREATE TABLE modelo_equipo_extra (
+    id_modelo INT,
+    id_equipo INT,
+    PRIMARY KEY (id_modelo, id_equipo),
+    FOREIGN KEY (id_modelo) REFERENCES modelo(id_modelo),
+    FOREIGN KEY (id_equipo) REFERENCES equipo(id_equipo)
+);
+
+-- TABLA: Concesionario
+CREATE TABLE concesionario (
+    id_concesionario INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    domicilio VARCHAR(200),
+    nit VARCHAR(20)
+);
+
+-- TABLA: Servicio Oficial
+CREATE TABLE servicio_oficial (
+    id_servicio INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    domicilio VARCHAR(200),
+    nit VARCHAR(20),
+    id_concesionario INT,
+    FOREIGN KEY (id_concesionario) REFERENCES concesionario(id_concesionario)
+);
+
+-- TABLA: Vehículo (físico)
+CREATE TABLE vehiculo (
+    nro_chasis VARCHAR(50) PRIMARY KEY,
+    id_modelo INT,
+    color VARCHAR(50),
+    año YEAR,
+    precio DECIMAL(10,2),
+    estado VARCHAR(50),
+    en_stock BOOLEAN,
+    ubicacion ENUM('concesionario', 'servicio_oficial'),
+    id_concesionario INT,
+    id_servicio INT,
+    FOREIGN KEY (id_modelo) REFERENCES modelo(id_modelo),
+    FOREIGN KEY (id_concesionario) REFERENCES concesionario(id_concesionario),
+    FOREIGN KEY (id_servicio) REFERENCES servicio_oficial(id_servicio)
+);
+
+-- TABLA: Cliente
+CREATE TABLE cliente (
+    id_cliente INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    direccion VARCHAR(200),
+    telefono VARCHAR(20),
+    correo VARCHAR(100),
+    fecha_nacimiento DATE
+);
+
+-- TABLA: Empleado
+CREATE TABLE empleado (
+    id_empleado INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    direccion VARCHAR(200),
+    telefono VARCHAR(20),
+    correo VARCHAR(100),
+    fecha_contratacion DATE,
+    cargo VARCHAR(100),
+    trabaja_en ENUM('concesionario', 'servicio_oficial'),
+    id_concesionario INT,
+    id_servicio INT,
+    FOREIGN KEY (id_concesionario) REFERENCES concesionario(id_concesionario),
+    FOREIGN KEY (id_servicio) REFERENCES servicio_oficial(id_servicio)
+);
+
+-- TABLA: Venta
+CREATE TABLE venta (
+    id_venta INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_venta DATE,
+    precio_venta DECIMAL(10,2),
+    forma_pago ENUM('contado', 'financiera'),
+    cuotas INT,
+    id_cliente INT,
+    id_empleado INT,
+    FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente),
+    FOREIGN KEY (id_empleado) REFERENCES empleado(id_empleado)
+);
+
+-- Relación entre venta y vehículos entregados
+CREATE TABLE venta_vehiculo (
+    id_venta INT,
+    nro_chasis VARCHAR(50),
+    fecha_entrega DATE,
+    matricula VARCHAR(20),
+    es_stock BOOLEAN,
+    origen ENUM('stock', 'fábrica'),
+    PRIMARY KEY (id_venta, nro_chasis),
+    FOREIGN KEY (id_venta) REFERENCES venta(id_venta),
+    FOREIGN KEY (nro_chasis) REFERENCES vehiculo(nro_chasis)
+);
+
+-- Extras comprados en la venta
+CREATE TABLE venta_extra (
+    id_venta INT,
+    id_equipo INT,
+    precio_extra DECIMAL(10,2),
+    PRIMARY KEY (id_venta, id_equipo),
+    FOREIGN KEY (id_venta) REFERENCES venta(id_venta),
+    FOREIGN KEY (id_equipo) REFERENCES equipo(id_equipo)
+);
+
+-- Financiamiento
+CREATE TABLE financiamiento (
+    id_financiamiento INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_financiamiento VARCHAR(100),
+    entidad_financiera VARCHAR(100),
+    monto DECIMAL(10,2),
+    cuotas INT,
+    tasa_interes DECIMAL(5,2),
+    plazo INT,
+    id_venta INT,
+    FOREIGN KEY (id_venta) REFERENCES venta(id_venta)
+);
+
+-- Banco
+CREATE TABLE banco (
+    id_banco INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    numero_cuenta VARCHAR(100),
+    id_financiamiento INT,
+    FOREIGN KEY (id_financiamiento) REFERENCES financiamiento(id_financiamiento)
+);
+
+-- Factura por venta
+CREATE TABLE factura_venta (
+    id_factura INT AUTO_INCREMENT PRIMARY KEY,
+    id_venta INT,
+    total DECIMAL(10,2),
+    iva DECIMAL(10,2),
+    precio_final DECIMAL(10,2),
+    FOREIGN KEY (id_venta) REFERENCES venta(id_venta)
+);
+
+-- Reparación
+CREATE TABLE reparacion (
+    id_reparacion INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_entrada DATE,
+    hora_entrada TIME,
+    descripcion VARCHAR(255),
+    id_cliente INT,
+    id_vehiculo VARCHAR(50),
+    FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente),
+    FOREIGN KEY (id_vehiculo) REFERENCES vehiculo(nro_chasis)
+);
+
+-- Mecánico
+CREATE TABLE mecanico (
+    id_mecanico INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    direccion VARCHAR(200),
+    telefono VARCHAR(20),
+    especialidad VARCHAR(100),
+    salario DECIMAL(10,2),
+    fecha_ingreso DATE
+);
+
+-- Relación reparación - mecánico
+CREATE TABLE reparacion_mecanico (
+    id_reparacion INT,
+    id_mecanico INT,
+    PRIMARY KEY (id_reparacion, id_mecanico),
+    FOREIGN KEY (id_reparacion) REFERENCES reparacion(id_reparacion),
+    FOREIGN KEY (id_mecanico) REFERENCES mecanico(id_mecanico)
+);
+
+-- Repuesto
+CREATE TABLE repuesto (
+    id_repuesto INT AUTO_INCREMENT PRIMARY KEY,
+    descripcion VARCHAR(100),
+    precio_unidad DECIMAL(10,2)
+);
+
+-- Relación reparación - repuesto
+CREATE TABLE reparacion_repuesto (
+    id_reparacion INT,
+    id_repuesto INT,
+    PRIMARY KEY (id_reparacion, id_repuesto),
+    FOREIGN KEY (id_reparacion) REFERENCES reparacion(id_reparacion),
+    FOREIGN KEY (id_repuesto) REFERENCES repuesto(id_repuesto)
+);
+
+-- Factura por reparación
+CREATE TABLE factura_reparacion (
+    id_factura INT AUTO_INCREMENT PRIMARY KEY,
+    id_reparacion INT,
+    total DECIMAL(10,2),
+    iva DECIMAL(10,2),
+    precio_final DECIMAL(10,2),
+    FOREIGN KEY (id_reparacion) REFERENCES reparacion(id_reparacion)
+);
+CREATE TABLE pedido_importacion (
+    id_pedido INT AUTO_INCREMENT PRIMARY KEY,
+    id_repuesto INT NOT NULL,
+    fecha_solicitud DATE NOT NULL,
+    estado ENUM('pendiente', 'recibido', 'entregado') DEFAULT 'pendiente',
+    fecha_entrega DATE,
+    FOREIGN KEY (id_repuesto) REFERENCES repuesto(id_repuesto)
+);
+CREATE TABLE mano_obra (
+    id_reparacion INT,
+    id_mecanico INT,
+    horas_trabajadas DECIMAL(5,2),
+    costo_hora DECIMAL(10,2),
+    PRIMARY KEY (id_reparacion, id_mecanico),
+    FOREIGN KEY (id_reparacion) REFERENCES reparacion(id_reparacion),
+    FOREIGN KEY (id_mecanico) REFERENCES mecanico(id_mecanico)
+);
+
+-- INSERTS
+
+-- 1) MARCA (10 filas)
+INSERT INTO marca (nombre) VALUES
+  ('Audi'),
+  ('Volkswagen'),
+  ('Toyota'),
+  ('BMW'),
+  ('Mercedes'),
+  ('Honda'),
+  ('Hyundai'),
+  ('Kia'),
+  ('Nissan'),
+  ('Chevrolet');
+
+-- 2) MODELO (10 filas)
+INSERT INTO modelo (
+  id_marca, nombre_modelo, potencia_fiscal, cilindrada,
+  nro_puertas, nro_ruedas, capacidad_pasajeros,
+  precio_base, descuento
+) VALUES
+  (1, 'A4',        '120 CV', '2.0', 4, 4, 5, 32000.00, 1000.00),
+  (2, 'Golf',      '110 CV', '1.8', 4, 4, 5, 25000.00,  500.00),
+  (3, 'Corolla',   '90 CV',  '1.6', 4, 4, 5, 20000.00,  800.00),
+  (4, 'X5',        '240 CV', '3.0', 5, 4, 7, 60000.00, 2000.00),
+  (5, 'C-Class',   '150 CV', '2.0', 4, 4, 5, 40000.00, 1500.00),
+  (6, 'Civic',     '100 CV', '1.8', 4, 4, 5, 22000.00,  700.00),
+  (7, 'Santa Fe',  '170 CV', '2.2', 5, 4, 7, 35000.00, 1200.00),
+  (8, 'Sportage',  '160 CV', '2.0', 5, 4, 5, 30000.00, 1000.00),
+  (9, 'Altima',    '130 CV', '2.5', 4, 4, 5, 28000.00,  900.00),
+  (10,'Camaro',    '275 CV', '3.6', 2, 4, 4, 45000.00, 1800.00);
+
+-- 3) EQUIPO (10 filas)
+INSERT INTO equipo (descripcion, precio) VALUES
+  ('Airbag conductor',       0.00),
+  ('Airbag pasajero',        0.00),
+  ('Frenos ABS',             0.00),
+  ('Control de tracción',    0.00),
+  ('Aire acondicionado',  800.00),
+  ('Climatizador dual',   1200.00),
+  ('Sensor de lluvia',     300.00),
+  ('Cámara trasera',       500.00),
+  ('Sistema de sonido',   1500.00),
+  ('Pintura metalizada',   500.00);
+
+-- 4) MODELO_EQUIPO_SERIE (10 filas)
+INSERT INTO modelo_equipo_serie (id_modelo, id_equipo) VALUES
+  (1,1),(1,3),(1,4),(2,1),(2,2),
+  (3,1),(3,5),(4,1),(4,3),(5,4);
+
+-- 5) MODELO_EQUIPO_EXTRA (10 filas)
+INSERT INTO modelo_equipo_extra (id_modelo, id_equipo) VALUES
+  (1,6),(1,7),(2,6),(2,8),(3,7),
+  (4,9),(5,6),(6,7),(7,8),(8,10);
+
+-- 6) CONCESIONARIO (10 filas)
+INSERT INTO concesionario (nombre, domicilio, nit) VALUES
+  ('AutoWorld',      'Av. Central 123',    '12345678'),
+  ('MegaCars',       'Calle Real 456',     '87654321'),
+  ('Premium Motors', 'Av. Libertad 10',    '11223344'),
+  ('City Auto',      'Calle Falsa 123',    '55667788'),
+  ('DriveTime',      'Av. del Parque 5',   '99887766'),
+  ('CarZone',        'Calle Luna 7',       '22334455'),
+  ('MotorHouse',     'Av. Sol 9',          '66778899'),
+  ('AutoPlus',       'Calle Estrella 2',   '33445566'),
+  ('SpeedCars',      'Av. Rápida 88',      '44556677'),
+  ('Urban Motors',   'Calle Moderna 13',   '55668899');
+
+-- 7) SERVICIO_OFICIAL (10 filas)
+INSERT INTO servicio_oficial (nombre, domicilio, nit, id_concesionario) VALUES
+  ('Servicio Norte',     'Zona Norte',    '11122233', 1),
+  ('Servicio Sur',       'Zona Sur',      '44455566', 2),
+  ('Servicio Este',      'Zona Este',     '77788899', 3),
+  ('Servicio Oeste',     'Zona Oeste',    '00011122', 4),
+  ('Servicio Centro',    'Zona Centro',   '33344455', 5),
+  ('Servicio Premium',   'Zona Alta',     '66677788', 6),
+  ('Servicio Express',   'Zona Rápida',   '99900011', 7),
+  ('Servicio Eco',       'Zona Verde',    '22233344', 8),
+  ('Servicio VIP',       'Zona VIP',      '55566677', 9),
+  ('Servicio Básico',    'Zona Baja',     '88899900',10);
+
+-- 8) VEHICULO (10 filas)
+INSERT INTO vehiculo (
+  nro_chasis, id_modelo, color, año, precio,
+  estado, en_stock, ubicacion, id_concesionario, id_servicio
+) VALUES
+  ('CH1001', 1, 'Rojo',    2023, 32000.00, 'nuevo', TRUE,  'concesionario',      1, NULL),
+  ('CH1002', 2, 'Blanco',  2022, 25000.00, 'usado', FALSE, 'servicio_oficial', NULL,       2),
+  ('CH1003', 3, 'Negro',   2024, 20000.00, 'nuevo', TRUE,  'concesionario',      3, NULL),
+  ('CH1004', 4, 'Azul',    2021, 60000.00, 'usado', TRUE,  'concesionario',      4, NULL),
+  ('CH1005', 5, 'Gris',    2022, 40000.00, 'nuevo', TRUE,  'servicio_oficial', NULL,       5),
+  ('CH1006', 6, 'Verde',   2023, 22000.00, 'nuevo', TRUE,  'concesionario',      6, NULL),
+  ('CH1007', 7, 'Amarillo',2024, 35000.00, 'usado', FALSE, 'servicio_oficial', NULL,       7),
+  ('CH1008', 8, 'Plateado',2021, 30000.00, 'usado', TRUE,  'concesionario',      8, NULL),
+  ('CH1009', 9, 'Rojo',    2023, 28000.00, 'nuevo', TRUE,  'concesionario',      9, NULL),
+  ('CH1010',10, 'Blanco',  2022, 45000.00, 'usado', FALSE, 'servicio_oficial', NULL,      10);
+
+-- 9) CLIENTE (10 filas)
+INSERT INTO cliente (
+  nombre, apellido, direccion, telefono, correo, fecha_nacimiento
+) VALUES
+  ('Luis',    'Gómez',     'Av. 6 de Agosto', '77712345','luis@gmail.com',        '1990-05-20'),
+  ('Ana',     'Rodríguez', 'Calle 10',        '77754321','ana@gmail.com',         '1985-10-15'),
+  ('Pedro',   'Martínez',  'Av. Bolivia',     '77711234','pedro@mail.com',        '1992-07-30'),
+  ('María',   'López',     'Calle Sucre',     '77722345','maria@mail.com',        '1988-02-25'),
+  ('Jorge',   'Fernández', 'Av. Argentina',   '77733456','jorge@mail.com',        '1995-12-10'),
+  ('Sofía',   'Vega',      'Calle Potosí',    '77744567','sofia@mail.com',        '1991-09-05'),
+  ('Carlos',  'Díaz',      'Av. Cochabamba',  '77755678','carlos@mail.com',       '1987-03-18'),
+  ('Laura',   'Ramírez',   'Calle Tarija',    '77766789','laura@mail.com',        '1993-11-22'),
+  ('Andrés',  'Quispe',    'Av. Sucre',       '77777890','andres@mail.com',       '1994-08-12'),
+  ('Valeria', 'Peña',      'Calle Oruro',     '77788901','valeria@mail.com',      '1996-04-02');
+
+-- 10) EMPLEADO (10 filas)
+INSERT INTO empleado (
+  nombre, apellido, direccion, telefono,
+  correo, fecha_contratacion, cargo,
+  trabaja_en, id_concesionario, id_servicio
+) VALUES
+  ('Carlos', 'Pérez',   'Av. Busch',      '77711223','carlos@autoworld.com', '2022-01-10','Vendedor',        'concesionario',     1,  NULL),
+  ('Marta',  'López',   'Calle 5',        '77733445','marta@megacars.com',  '2021-06-05','Vendedora',       'servicio_oficial',  NULL,      2),
+  ('Luis',   'Ramírez', 'Av. Granados',   '77755667','luis@premiummotors.com','2020-03-15','Jefe de Ventas', 'concesionario',     3,  NULL),
+  ('Ana',    'Suárez',  'Calle Bolívar',  '77766778','ana@cityauto.com',     '2019-11-20','Gerente',         'concesionario',     4,  NULL),
+  ('Iván',   'Flores',  'Av. Litoral',    '77777889','ivan@drivetime.com',   '2023-02-01','Técnico',         'servicio_oficial', NULL,       5),
+  ('Sofía',  'Vargas',  'Calle Tarija',   '77788990','sofia@carzone.com',    '2022-05-30','Coordinadora',    'concesionario',     6,  NULL),
+  ('Diego',  'Suárez',  'Av. Blanco Gal.','77799001','diego@motorhouse.com', '2021-12-15','Supervisor',      'servicio_oficial', NULL,       6),
+  ('María',  'Castro',  'Calle Independ.','77710112','maria@autoplus.com',   '2023-04-20','Analista',        'concesionario',     7,  NULL),
+  ('Jorge',  'Ortega',  'Av. América',    '77721223','jorge@speedcars.com',  '2020-08-10','Asistente',       'servicio_oficial', NULL,       8),
+  ('Lucía',  'Rojas',   'Calle Bolívar',  '77732334','lucia@urbanmotors.com','2022-10-05','Recepción',       'concesionario',     9,  NULL);
+
+-- 11) VENTA (10 filas)
+INSERT INTO venta (
+  fecha_venta, precio_venta, forma_pago, cuotas, id_cliente, id_empleado
+) VALUES
+  ('2025-06-01', 33000.00, 'contado',   1, 1,  1),
+  ('2025-06-02', 32000.00, 'financiera',12, 2,  1),
+  ('2025-06-03', 21500.00, 'contado',   0, 3,  2),
+  ('2025-06-03', 60000.00, 'financiera',24, 4,  3),
+  ('2025-06-04', 40000.00, 'contado',   1, 5,  4),
+  ('2025-06-04', 22000.00, 'financiera',12, 6,  5),
+  ('2025-06-05', 35000.00, 'contado',   1, 7,  6),
+  ('2025-06-05', 30000.00, 'financiera',18, 8,  7),
+  ('2025-06-06', 28000.00, 'contado',   1, 9,  8),
+  ('2025-06-06', 45000.00, 'financiera',36,10,  9);
+
+-- 12) VENTA_VEHICULO (10 filas)
+INSERT INTO venta_vehiculo (
+  id_venta, nro_chasis, fecha_entrega, matricula, es_stock, origen
+) VALUES
+  (1, 'CH1001','2025-06-05','AAA-001', TRUE,  'stock'),
+  (2, 'CH1002','2025-06-06','BBB-002', FALSE, 'fábrica'),
+  (3, 'CH1003','2025-06-07','CCC-003', TRUE,  'stock'),
+  (4, 'CH1004','2025-06-08','DDD-004', FALSE, 'fábrica'),
+  (5, 'CH1005','2025-06-09','EEE-005', TRUE,  'stock'),
+  (6, 'CH1006','2025-06-10','FFF-006', TRUE,  'stock'),
+  (7, 'CH1007','2025-06-11','GGG-007', FALSE, 'fábrica'),
+  (8, 'CH1008','2025-06-12','HHH-008', TRUE,  'stock'),
+  (9, 'CH1009','2025-06-13','III-009', FALSE, 'fábrica'),
+  (10,'CH1010','2025-06-14','JJJ-010', TRUE,  'stock');
+
+-- 13) VENTA_EXTRA (10 filas)
+INSERT INTO venta_extra (id_venta, id_equipo, precio_extra) VALUES
+  (1, 3,  800.00),
+  (2, 4,  500.00),
+  (3, 5, 1200.00),
+  (4, 6, 1500.00),
+  (5, 7,  300.00),
+  (6, 8,  500.00),
+  (7, 9, 1500.00),
+  (8,10,  500.00),
+  (9, 2,  0.00),
+  (10,1,  0.00);
+
+-- 14) FACTURA_VENTA (10 filas)
+INSERT INTO factura_venta (id_venta, total, iva, precio_final) VALUES
+  (1, 33000.00, 5940.00, 38940.00),
+  (2, 32800.00, 5248.00, 38048.00),
+  (3, 21500.00, 3875.00, 25375.00),
+  (4, 60000.00,10800.00,70800.00),
+  (5, 40000.00, 6400.00,46400.00),
+  (6, 22000.00, 3520.00,25520.00),
+  (7, 35000.00, 5600.00,40600.00),
+  (8, 30000.00, 4800.00,34800.00),
+  (9, 28000.00, 4480.00,32480.00),
+  (10,45000.00,7200.00,52200.00);
+
+-- 15) FINANCIAMIENTO (10 filas)
+INSERT INTO financiamiento (
+  tipo_financiamiento, entidad_financiera, monto,
+  cuotas, tasa_interes, plazo, id_venta
+) VALUES
+  ('Directo',     'Banco A',10000.00,12,5.50,12,2),
+  ('Leasing',     'Banco B',32000.00,12,5.50,36,4),
+  ('Crédito',     'Banco C',22000.00,24,6.00,24,6),
+  ('Financiera',  'Banco D',35000.00,18,5.75,18,7),
+  ('Contrato',    'Banco E',30000.00,15,5.25,15,8),
+  ('Arrendamiento','Banco F',28000.00,10,5.00,10,9),
+  ('Directo',     'Banco G',45000.00,36,6.25,36,10),
+  ('Leasing',     'Banco H',20000.00,12,5.50,12,3),
+  ('Crédito',     'Banco I',40000.00,24,6.10,24,5),
+  ('Financiera',  'Banco J',33000.00,12,5.50,12,1);
+
+-- 16) BANCO (10 filas)
+INSERT INTO banco (nombre, numero_cuenta, id_financiamiento) VALUES
+  ('Banco A', 'A-0001',1),
+  ('Banco B', 'B-0002',2),
+  ('Banco C', 'C-0003',3),
+  ('Banco D', 'D-0004',4),
+  ('Banco E', 'E-0005',5),
+  ('Banco F', 'F-0006',6),
+  ('Banco G', 'G-0007',7),
+  ('Banco H', 'H-0008',8),
+  ('Banco I', 'I-0009',9),
+  ('Banco J', 'J-0010',10);
+
+-- 17) MECANICO (10 filas)
+INSERT INTO mecanico (
+  nombre, apellido, direccion, telefono,
+  especialidad, salario, fecha_ingreso
+) VALUES
+  ('Diego',  'Suárez',   'Av. Blanco G.', '77722334','Motor',   3500.00,'2023-03-01'),
+  ('Carlos', 'López',    'Calle E 7',     '70112233','Frenos',  1500.00,'2021-05-10'),
+  ('Sofía',  'Martínez', 'Av. F 14',      '70223344','Motor',   1600.00,'2020-11-20'),
+  ('Ana',    'Vargas',   'Calle Tarija',  '70333445','Electr.', 1700.00,'2022-06-15'),
+  ('Iván',   'Flores',   'Av. Litoral',   '70444556','Carrocería',1800.00,'2019-09-20'),
+  ('Laura',  'Castro',   'Calle Sucre',   '70555667','Pintura',1900.00,'2021-12-01'),
+  ('María',  'Rojas',    'Av. América',   '70666778','Motor',   2000.00,'2020-02-10'),
+  ('Jorge',  'Ortega',   'Calle Luna',    '70777889','Frenos',  1850.00,'2022-03-22'),
+  ('Lucía',  'Peña',     'Av. Sol',       '70888990','Electr.', 1750.00,'2019-11-05'),
+  ('Pedro',  'Quispe',   'Calle Oruro',   '70999001','Motor',   1650.00,'2023-01-20');
+
+-- 18) REPARACION (10 filas)
+INSERT INTO reparacion (
+  fecha_entrada, hora_entrada, descripcion, id_cliente, id_vehiculo
+) VALUES
+  ('2025-06-01','08:00:00','Cambio de aceite',     1,'CH1001'),
+  ('2025-06-01','09:30:00','Frenos ABS',           2,'CH1002'),
+  ('2025-06-02','10:00:00','Revisión general',     3,'CH1003'),
+  ('2025-06-02','11:15:00','Cambio de batería',    4,'CH1004'),
+  ('2025-06-03','12:00:00','Reparación suspensión',5,'CH1005'),
+  ('2025-06-03','13:45:00','Alineación',           6,'CH1006'),
+  ('2025-06-04','14:30:00','Servicio de motor',    7,'CH1007'),
+  ('2025-06-04','15:15:00','Pintura',              8,'CH1008'),
+  ('2025-06-05','16:00:00','Instalación audio',    9,'CH1009'),
+  ('2025-06-05','16:45:00','Climatizador',        10,'CH1010');
+
+-- 19) REPARACION_MECANICO (10 filas)
+INSERT INTO reparacion_mecanico (id_reparacion, id_mecanico) VALUES
+  (1,1),(2,2),(3,3),(4,4),(5,5),
+  (6,6),(7,7),(8,8),(9,9),(10,10);
+
+-- 20) REPUESTO (10 filas)
+INSERT INTO repuesto (descripcion, precio_unidad) VALUES
+  ('Filtro aceite',45.00),
+  ('Filtro aire', 35.00),
+  ('Pastillas freno',180.00),
+  ('Líquido frenos',35.00),
+  ('Batería',    120.00),
+  ('Correa',      50.00),
+  ('Amortiguador',150.00),
+  ('Bujías',      20.00),
+  ('Aceite 5W30',150.00),
+  ('Aceite 10W40',140.00);
+
+-- 21) REPARACION_REPUESTO (10 filas)
+INSERT INTO reparacion_repuesto (id_reparacion, id_repuesto) VALUES
+  (1,1),(1,2),(2,3),(3,4),(4,5),
+  (5,6),(6,7),(7,8),(8,9),(9,10);
+
+-- 22) FACTURA_REPARACION (10 filas)
+INSERT INTO factura_reparacion (id_reparacion, total, iva, precio_final) VALUES
+  (1,100.00,18.00,118.00),
+  (2,150.00,27.00,177.00),
+  (3,200.00,36.00,236.00),
+  (4,120.00,21.60,141.60),
+  (5,180.00,32.40,212.40),
+  (6,160.00,28.80,188.80),
+  (7,220.00,39.60,259.60),
+  (8,140.00,25.20,165.20),
+  (9,130.00,23.40,153.40),
+  (10,170.00,30.60,200.60);
+
+-- 23) PEDIDO_IMPORTACION (10 filas)
+INSERT INTO pedido_importacion (
+  id_repuesto, fecha_solicitud, estado, fecha_entrega
+) VALUES
+  (1,'2025-06-01','pendiente',NULL),
+  (2,'2025-06-01','pendiente',NULL),
+  (3,'2025-06-02','recibido', NULL),
+  (4,'2025-06-02','entregado','2025-06-05'),
+  (5,'2025-06-03','pendiente',NULL),
+  (6,'2025-06-03','recibido', '2025-06-06'),
+  (7,'2025-06-04','entregado','2025-06-07'),
+  (8,'2025-06-04','pendiente',NULL),
+  (9,'2025-06-05','recibido', '2025-06-08'),
+  (10,'2025-06-05','entregado','2025-06-09');
+
+-- 24) MANO_OBRA (10 filas)
+INSERT INTO mano_obra (
+  id_reparacion, id_mecanico, horas_trabajadas, costo_hora
+) VALUES
+  (1,1,2.00,20.00),(2,2,1.50,22.00),(3,3,3.00,18.00),
+  (4,4,2.50,19.00),(5,5,1.00,20.00),(6,6,2.20,21.00),
+  (7,7,1.80,20.50),(8,8,2.75,22.00),(9,9,3.10,19.50),
+  (10,10,2.40,18.50);
+
+-- REPORTES
+
+-- ============================================
+-- CREATES
+-- ============================================
+DROP PROCEDURE IF EXISTS registrar_venta;
+DELIMITER $$
+
+CREATE PROCEDURE registrar_venta (
+    IN  p_id_cliente      INT,
+    IN  p_id_empleado     INT,
+    IN  p_nro_chasis      VARCHAR(50),
+    IN  p_forma_pago      VARCHAR(20),
+    IN  p_cuotas          INT,
+    IN  p_precio_total    DECIMAL(10,2),
+    IN  p_fecha_venta     DATE,          -- 🆕
+    IN  p_fecha_entrega   DATE,
+    IN  p_matricula       VARCHAR(20),
+    IN  p_es_stock        BOOLEAN,
+    IN  p_origen          VARCHAR(20),
+    OUT p_id_generado     INT,           -- 🆕
+    OUT p_resultado       VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '❌ Error al registrar la venta';
+    END;
+
+    START TRANSACTION;
+
+    /* ── 1. Insertamos la cabecera ── */
+    INSERT INTO venta (fecha_venta, precio_venta, forma_pago, cuotas,
+                       id_cliente, id_empleado)
+    VALUES (p_fecha_venta, p_precio_total, p_forma_pago, p_cuotas,
+            p_id_cliente,  p_id_empleado);
+
+    /* ── 2. Obtenemos el ID recién generado ── */
+    SET p_id_generado := LAST_INSERT_ID();
+
+    /* ── 3. Insertamos el vehículo vinculado ── */
+    INSERT INTO venta_vehiculo (id_venta, nro_chasis, fecha_entrega,
+                                matricula, es_stock, origen)
+    VALUES (p_id_generado, p_nro_chasis, p_fecha_entrega,
+            p_matricula,   p_es_stock,   p_origen);
+
+    COMMIT;
+    SET p_resultado = '✅ Venta registrada correctamente';
+END$$
+DELIMITER ;
+
+
+
+
+
+-- 2 Código SQL del procedimiento registrar_venta
+
+DELIMITER $$
+
+CREATE PROCEDURE reporte_ventas_por_mes (
+    IN p_mes int,
+    IN p_anio INT
+)
+BEGIN
+    SELECT
+        m.nombre_modelo,
+        COUNT(vv.nro_chasis) AS cantidad_vendida,
+        SUM(v.precio_venta) AS ingreso_total
+    FROM venta v
+    JOIN venta_vehiculo vv ON v.id_venta = vv.id_venta
+    JOIN vehiculo ve ON vv.nro_chasis = ve.nro_chasis
+    JOIN modelo m ON ve.id_modelo = m.id_modelo
+    WHERE MONTH(v.fecha_venta) = p_mes AND YEAR(v.fecha_venta) = p_anio
+    GROUP BY m.nombre_modelo
+    ORDER BY ingreso_total DESC;
+END $$
+
+DELIMITER ;
+
+CALL reporte_ventas_por_mes(0, 0);
+
+-- 3 Reporte de ventas por empleado (vendedor)
+
+DELIMITER $$
+
+CREATE PROCEDURE reporte_ventas_por_empleado ()
+BEGIN
+    SELECT
+        e.nombre,
+        e.apellido,
+        COUNT(v.id_venta) AS cantidad_ventas,
+        SUM(v.precio_venta) AS total_generado
+    FROM venta v
+    JOIN empleado e ON v.id_empleado = e.id_empleado
+    GROUP BY e.id_empleado
+    ORDER BY total_generado DESC;
+END $$
+
+DELIMITER ;
+
+CALL reporte_ventas_por_empleado();
+
+-- OPCIONALES
+
+-- Registrar reparacion
+
+DROP PROCEDURE IF EXISTS registrar_reparacion;
+DELIMITER $$
+
+CREATE PROCEDURE registrar_reparacion (
+    IN p_fecha_entrada DATE,
+    IN p_hora_entrada TIME,
+    IN p_id_cliente INT,
+    IN p_id_vehiculo VARCHAR(50),
+    IN p_descripcion VARCHAR(255),
+    IN p_diagnostico TEXT,
+    IN p_garantia VARCHAR(100),
+    IN p_mano_obra JSON,
+    OUT p_id_reparacion INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    DECLARE mano_count INT;
+    DECLARE v_id_mecanico INT;
+    DECLARE v_horas DECIMAL(5,2);
+    DECLARE v_costo DECIMAL(10,2);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = 'Error al registrar la reparación';
+    END;
+
+    START TRANSACTION;
+
+    -- 1. Insertar cabecera con diagnóstico y garantía
+    INSERT INTO reparacion (
+        fecha_entrada, hora_entrada, descripcion,
+        id_cliente, id_vehiculo, diagnostico, garantia
+    )
+    VALUES (
+        p_fecha_entrada, p_hora_entrada, p_descripcion,
+        p_id_cliente, p_id_vehiculo, p_diagnostico, p_garantia
+    );
+
+    SET p_id_reparacion = LAST_INSERT_ID();
+
+    -- 2. Insertar mano de obra desde el JSON
+    SET mano_count = JSON_LENGTH(p_mano_obra);
+    WHILE i < mano_count DO
+        SET v_id_mecanico = JSON_UNQUOTE(JSON_EXTRACT(p_mano_obra, CONCAT('$[', i, '].idMecanico')));
+        SET v_horas       = JSON_UNQUOTE(JSON_EXTRACT(p_mano_obra, CONCAT('$[', i, '].horasTrabajadas')));
+        SET v_costo       = JSON_UNQUOTE(JSON_EXTRACT(p_mano_obra, CONCAT('$[', i, '].costoHora')));
+
+        INSERT INTO mano_obra (id_reparacion, id_mecanico, horas_trabajadas, costo_hora)
+        VALUES (p_id_reparacion, v_id_mecanico, v_horas, v_costo);
+
+        SET i = i + 1;
+    END WHILE;
+
+    -- 3. Calcular totales
+    SET @total_repuestos := (
+        SELECT IFNULL(SUM(r.precio_unidad), 0)
+        FROM reparacion_repuesto rr
+        JOIN repuesto r ON rr.id_repuesto = r.id_repuesto
+        WHERE rr.id_reparacion = p_id_reparacion
+    );
+
+    SET @total_mano_obra := (
+        SELECT IFNULL(SUM(horas_trabajadas * costo_hora), 0)
+        FROM mano_obra
+        WHERE id_reparacion = p_id_reparacion
+    );
+
+    SET @total := @total_repuestos + @total_mano_obra;
+    SET @iva := @total * 0.13;
+    SET @precio_final := @total + @iva;
+
+    -- 4. Insertar factura
+    INSERT INTO factura_reparacion (id_reparacion, total, iva, precio_final)
+    VALUES (p_id_reparacion, @total, @iva, @precio_final);
+
+    COMMIT;
+    SET p_resultado = CONCAT('Reparación registrada con ID ', p_id_reparacion);
+END$$
+DELIMITER ;
+
+-- reporte_ingresos_totales
+
+DELIMITER $$
+
+CREATE PROCEDURE reporte_ingresos_totales ()
+BEGIN
+    SELECT
+        'Venta' AS origen,
+        MONTH(fecha_venta) AS mes,
+        YEAR(fecha_venta) AS anio,
+        SUM(precio_venta) AS total
+    FROM venta
+    GROUP BY YEAR(fecha_venta), MONTH(fecha_venta)
+
+    UNION
+
+    SELECT
+        'Reparación',
+        MONTH(r.fecha_entrada),
+        YEAR(r.fecha_entrada),
+        SUM(fr.precio_final)
+    FROM factura_reparacion fr
+    JOIN reparacion r ON fr.id_reparacion = r.id_reparacion
+    GROUP BY YEAR(r.fecha_entrada), MONTH(r.fecha_entrada)
+    ORDER BY anio, mes;
+END $$
+
+DELIMITER ;
+
+-- reporte_modelos_mas_vendidos
+
+DELIMITER $$
+
+CREATE PROCEDURE reporte_modelos_mas_vendidos ()
+BEGIN
+    SELECT
+        m.nombre_modelo,
+        COUNT(vv.nro_chasis) AS unidades_vendidas,
+        SUM(v.precio_venta) AS total_generado
+    FROM venta v
+    JOIN venta_vehiculo vv ON v.id_venta = vv.id_venta
+    JOIN vehiculo ve ON vv.nro_chasis = ve.nro_chasis
+    JOIN modelo m ON ve.id_modelo = m.id_modelo
+    GROUP BY m.id_modelo
+    ORDER BY unidades_vendidas DESC;
+END $$
+
+DELIMITER ;
+
+ CALL registrar_reparacion(
+    1,
+     'A1B2C3',
+     'Cambio frenos delanteros',
+     1,
+     2,  -- 👈 mecánico distinto
+     5,
+     6,
+     7,
+     8,
+     9,
+     @resultado
+ );
+
+SELECT @resultado;
+
+
+CALL reporte_ingresos_totales();
+CALL reporte_modelos_mas_vendidos();
+
+
+
+-- ============================================
+-- PROCEDIMIENTO: registrar_cliente
+-- ============================================
+
+DELIMITER $$
+
+CREATE PROCEDURE registrar_cliente (
+    IN p_nombre VARCHAR(100),
+    IN p_apellido VARCHAR(100),
+    IN p_direccion VARCHAR(200),
+    IN p_telefono VARCHAR(20),
+    IN p_correo VARCHAR(100),
+    IN p_fecha_nacimiento DATE,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el cliente';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO cliente (nombre, apellido, direccion, telefono, correo, fecha_nacimiento)
+    VALUES (p_nombre, p_apellido, p_direccion, p_telefono, p_correo, p_fecha_nacimiento);
+
+    COMMIT;
+    SET p_resultado = CONCAT('✅ Cliente registrado con ID ', LAST_INSERT_ID());
+END $$
+
+DELIMITER ;
+
+-- ============================================
+-- PROCEDIMIENTO: registrar_vehiculo
+-- ============================================
+
+DELIMITER $$
+
+CREATE PROCEDURE registrar_vehiculo (
+    IN p_nro_chasis VARCHAR(50),
+    IN p_id_modelo INT,
+    IN p_color VARCHAR(50),
+    IN p_anio YEAR,
+    IN p_precio DECIMAL(10,2),
+    IN p_estado VARCHAR(50),
+    IN p_en_stock BOOLEAN,
+    IN p_ubicacion ENUM('concesionario', 'servicio_oficial'),
+    IN p_id_concesionario INT,
+    IN p_id_servicio INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el vehículo';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO vehiculo (nro_chasis, id_modelo, color, año, precio, estado, en_stock, ubicacion, id_concesionario, id_servicio)
+    VALUES (p_nro_chasis, p_id_modelo, p_color, p_anio, p_precio, p_estado, p_en_stock, p_ubicacion, p_id_concesionario, p_id_servicio);
+
+    COMMIT;
+    SET p_resultado = '✅ Vehículo registrado correctamente';
+END $$
+
+DELIMITER ;
+
+-- ============================================
+-- PROCEDIMIENTO: registrar_empleado
+-- ============================================
+
+DELIMITER $$
+
+CREATE PROCEDURE registrar_empleado (
+    IN p_nombre VARCHAR(100),
+    IN p_apellido VARCHAR(100),
+    IN p_direccion VARCHAR(200),
+    IN p_telefono VARCHAR(20),
+    IN p_correo VARCHAR(100),
+    IN p_fecha_contratacion DATE,
+    IN p_cargo VARCHAR(100),
+    IN p_trabaja_en ENUM('concesionario', 'servicio_oficial'),
+    IN p_id_concesionario INT,
+    IN p_id_servicio INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el empleado';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO empleado (nombre, apellido, direccion, telefono, correo, fecha_contratacion, cargo, trabaja_en, id_concesionario, id_servicio)
+    VALUES (p_nombre, p_apellido, p_direccion, p_telefono, p_correo, p_fecha_contratacion, p_cargo, p_trabaja_en, p_id_concesionario, p_id_servicio);
+
+    COMMIT;
+    SET p_resultado = CONCAT('✅ Empleado registrado con ID ', LAST_INSERT_ID());
+END $$
+
+DELIMITER ;
+
+-- ============================================
+-- PROCEDIMIENTO: registrar_repuesto
+-- ============================================
+
+DELIMITER $$
+
+CREATE PROCEDURE registrar_repuesto (
+    IN p_descripcion VARCHAR(100),
+    IN p_precio_unidad DECIMAL(10,2),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el repuesto';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO repuesto (descripcion, precio_unidad)
+    VALUES (p_descripcion, p_precio_unidad);
+
+    COMMIT;
+    SET p_resultado = CONCAT('✅ Repuesto registrado con ID ', LAST_INSERT_ID());
+END $$
+
+DELIMITER ;
+
+-- ============================================
+-- 📊 REPORTE: Reparaciones realizadas por cada mecánico
+-- Muestra cuántas reparaciones hizo cada mecánico y el total generado
+-- ============================================
+
+DELIMITER $$
+
+CREATE PROCEDURE reporte_reparaciones_por_mecanico ()
+BEGIN
+    SELECT
+        m.id_mecanico,
+        m.nombre,
+        m.apellido,
+        COUNT(rm.id_reparacion) AS cantidad_reparaciones,
+        SUM(fr.precio_final) AS total_generado
+    FROM mecanico m
+    JOIN reparacion_mecanico rm ON m.id_mecanico = rm.id_mecanico
+    JOIN factura_reparacion fr ON rm.id_reparacion = fr.id_reparacion
+    GROUP BY m.id_mecanico
+    ORDER BY total_generado DESC;
+END $$
+
+DELIMITER ;
+
+-- ============================================
+-- 📊 REPORTE: Ventas por modelo filtradas por mes y año
+-- Recibe el mes y año como parámetros
+-- ============================================
+
+DELIMITER $$
+
+CREATE PROCEDURE reporte_ventas_por_modelo_periodo (
+    IN p_mes INT,
+    IN p_anio INT
+)
+BEGIN
+    SELECT
+        mo.nombre_modelo,
+        COUNT(vv.nro_chasis) AS unidades_vendidas,
+        SUM(v.precio_venta) AS total_generado
+    FROM venta v
+    JOIN venta_vehiculo vv ON v.id_venta = vv.id_venta
+    JOIN vehiculo ve ON vv.nro_chasis = ve.nro_chasis
+    JOIN modelo mo ON ve.id_modelo = mo.id_modelo
+    WHERE MONTH(v.fecha_venta) = p_mes AND YEAR(v.fecha_venta) = p_anio
+    GROUP BY mo.nombre_modelo
+    ORDER BY unidades_vendidas DESC;
+END $$
+
+DELIMITER ;
+
+-- ============================================
+-- 📊 REPORTE: Repuestos más utilizados en reparaciones
+-- Cuenta cuántas veces se usó cada repuesto y el total gastado
+-- ============================================
+
+DELIMITER $$
+
+CREATE PROCEDURE reporte_repuestos_mas_usados ()
+BEGIN
+    SELECT
+        r.id_repuesto,
+        r.descripcion,
+        COUNT(rr.id_repuesto) AS veces_usado,
+        COUNT(rr.id_repuesto) * r.precio_unidad AS total_gastado
+    FROM repuesto r
+    JOIN reparacion_repuesto rr ON r.id_repuesto = rr.id_repuesto
+    GROUP BY r.id_repuesto
+    ORDER BY veces_usado DESC;
+END $$
+
+DELIMITER ;
+
+-- =============================================
+-- 🔁 Reporte de historial del cliente (ventas y reparaciones con mecánicos)
+-- =============================================
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS reporte_historial_cliente $$
+CREATE PROCEDURE reporte_historial_cliente (
+    IN p_id_cliente INT
+)
+BEGIN
+    SELECT
+        'Venta' AS tipo,
+        v.fecha_venta AS fecha,
+        NULL AS descripcion,
+        NULL AS mecanico,
+        fv.precio_final AS monto
+    FROM venta v
+    JOIN factura_venta fv ON v.id_venta = fv.id_venta
+    WHERE v.id_cliente = p_id_cliente
+
+    UNION
+
+    SELECT
+        'Reparación',
+        r.fecha_entrada,
+        r.descripcion,
+        GROUP_CONCAT(CONCAT(m.nombre, ' ', m.apellido) SEPARATOR ', '),
+        fr.precio_final
+    FROM reparacion r
+    JOIN factura_reparacion fr ON r.id_reparacion = fr.id_reparacion
+    JOIN reparacion_mecanico rm ON r.id_reparacion = rm.id_reparacion
+    JOIN mecanico m ON rm.id_mecanico = m.id_mecanico
+    WHERE r.id_cliente = p_id_cliente
+    GROUP BY r.id_reparacion, r.fecha_entrada, r.descripcion, fr.precio_final;
+END $$
+
+DELIMITER ;
+
+
+CALL reporte_reparaciones_por_mecanico();
+CALL reporte_ventas_por_modelo_periodo(5, 2025);
+CALL reporte_repuestos_mas_usados();
+CALL reporte_historial_cliente(1);
+
+
+-- ============================================
+-- LIST
+-- ============================================
+-- Eliminar el procedimiento anterior (opcional, por seguridad)
+-- 💾 Procedimiento listar_ventas con IDs de extras en una sola columna CSV
+DROP PROCEDURE IF EXISTS listar_ventas;
+DELIMITER $$
+CREATE PROCEDURE listar_ventas()
+BEGIN
+    SELECT
+        v.id_venta,
+        v.fecha_venta,
+        v.precio_venta,
+        v.forma_pago,
+        v.cuotas,
+        v.id_cliente,
+        v.id_empleado,
+        vv.nro_chasis,
+        vv.matricula,
+        vv.es_stock,
+        vv.origen,
+        vv.fecha_entrega,
+        IFNULL(GROUP_CONCAT(ve.id_equipo ORDER BY ve.id_equipo), '') AS id_extras_csv
+    FROM      venta v
+    JOIN      venta_vehiculo vv ON vv.id_venta = v.id_venta
+    LEFT JOIN venta_extra    ve ON ve.id_venta = v.id_venta
+    GROUP BY
+        v.id_venta,          v.fecha_venta,  v.precio_venta, v.forma_pago,
+        v.cuotas,            v.id_cliente,   v.id_empleado,
+        vv.nro_chasis,       vv.matricula,   vv.es_stock,
+        vv.origen,           vv.fecha_entrega;
+END$$
+DELIMITER ;
+
+
+
+-- =============================================
+-- 📄 PROCEDIMIENTO: listar_clientes
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE listar_clientes()
+BEGIN
+    SELECT * FROM cliente;
+END $$
+
+DELIMITER ;
+
+-- =============================================
+-- 👥 PROCEDIMIENTO: listar_empleados
+-- =============================================
+DROP PROCEDURE IF EXISTS listar_empleados;
+DELIMITER $$
+
+CREATE PROCEDURE listar_empleados()
+BEGIN
+    SELECT
+        e.id_empleado,
+        e.nombre,
+        e.apellido,
+        e.direccion,
+        e.telefono,
+        e.correo,
+        e.fecha_contratacion,
+        e.cargo,
+        e.trabaja_en,
+        e.id_concesionario,
+        e.id_servicio,
+        c.nombre AS nombre_concesionario,
+        s.nombre AS nombre_servicio
+    FROM empleado e
+    LEFT JOIN concesionario c ON e.id_concesionario = c.id_concesionario
+    LEFT JOIN servicio_oficial s ON e.id_servicio = s.id_servicio;
+END $$
+
+DELIMITER ;
+
+
+-- =============================================
+-- 🚗 PROCEDIMIENTO: listar_vehiculos
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE listar_vehiculos()
+BEGIN
+    SELECT * FROM vehiculo;
+END $$
+
+DELIMITER ;
+
+-- =============================================
+-- 🧩 PROCEDIMIENTO: listar_repuestos
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE listar_repuestos()
+BEGIN
+    SELECT * FROM repuesto;
+END $$
+
+DELIMITER ;
+
+-- =============================================
+-- 💰 PROCEDIMIENTO: listar_ventas
+-- =============================================
+
+
+-- =============================================
+-- 🔧 PROCEDIMIENTO: listar_reparaciones
+-- =============================================
+DROP PROCEDURE IF EXISTS listar_reparaciones;
+DELIMITER $$
+
+CREATE PROCEDURE listar_reparaciones()
+BEGIN
+    SELECT
+        r.id_reparacion,
+        r.id_cliente,
+        CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente,
+        r.id_vehiculo AS nro_chasis,
+        r.descripcion,
+        r.diagnostico,               -- ✅ nuevo campo
+        r.garantia,                  -- ✅ nuevo campo
+
+        -- ✅ Lista de mecánicos asignados
+        GROUP_CONCAT(DISTINCT CONCAT(m.nombre, ' ', m.apellido)
+                     ORDER BY m.id_mecanico
+                     SEPARATOR ' / ') AS mecanicos,
+
+        -- ✅ Lista de repuestos utilizados
+        GROUP_CONCAT(DISTINCT rep.descripcion
+                     ORDER BY rep.id_repuesto
+                     SEPARATOR ' / ') AS repuestos,
+
+        r.fecha_entrada,
+        r.hora_entrada
+    FROM reparacion r
+    JOIN cliente c ON r.id_cliente = c.id_cliente
+    LEFT JOIN reparacion_mecanico rm ON r.id_reparacion = rm.id_reparacion
+    LEFT JOIN mecanico m ON rm.id_mecanico = m.id_mecanico
+    LEFT JOIN reparacion_repuesto rr ON r.id_reparacion = rr.id_reparacion
+    LEFT JOIN repuesto rep ON rr.id_repuesto = rep.id_repuesto
+    GROUP BY
+        r.id_reparacion,
+        r.id_cliente,
+        r.id_vehiculo,
+        r.descripcion,
+        r.diagnostico,         -- ✅ incluir en GROUP BY
+        r.garantia,            -- ✅ incluir en GROUP BY
+        c.nombre,
+        c.apellido,
+        r.fecha_entrada,
+        r.hora_entrada;
+END $$
+DELIMITER ;
+
+
+-- ============================================
+-- UPDATES
+-- ============================================
+
+-- =============================================
+-- 📄 PROCEDIMIENTO: actualizar_cliente
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_cliente (
+    IN p_id_cliente INT,
+    IN p_nombre VARCHAR(100),
+    IN p_apellido VARCHAR(100),
+    IN p_direccion VARCHAR(200),
+    IN p_telefono VARCHAR(20),
+    IN p_correo VARCHAR(100),
+    IN p_fecha_nacimiento DATE,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el cliente';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE cliente
+    SET nombre = p_nombre,
+        apellido = p_apellido,
+        direccion = p_direccion,
+        telefono = p_telefono,
+        correo = p_correo,
+        fecha_nacimiento = p_fecha_nacimiento
+    WHERE id_cliente = p_id_cliente;
+
+    COMMIT;
+    SET p_resultado = '✅ Cliente actualizado correctamente';
+END $$
+
+DELIMITER ;
+
+-- =============================================
+-- 👥 PROCEDIMIENTO: actualizar_empleado
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_empleado (
+    IN p_id_empleado INT,
+    IN p_nombre VARCHAR(100),
+    IN p_apellido VARCHAR(100),
+    IN p_direccion VARCHAR(200),
+    IN p_telefono VARCHAR(20),
+    IN p_correo VARCHAR(100),
+    IN p_fecha_contratacion DATE,
+    IN p_cargo VARCHAR(100),
+    IN p_trabaja_en ENUM('concesionario', 'servicio_oficial'),
+    IN p_id_concesionario INT,
+    IN p_id_servicio INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el empleado';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE empleado
+    SET nombre = p_nombre,
+        apellido = p_apellido,
+        direccion = p_direccion,
+        telefono = p_telefono,
+        correo = p_correo,
+        fecha_contratacion = p_fecha_contratacion,
+        cargo = p_cargo,
+        trabaja_en = p_trabaja_en,
+        id_concesionario = p_id_concesionario,
+        id_servicio = p_id_servicio
+    WHERE id_empleado = p_id_empleado;
+
+    COMMIT;
+    SET p_resultado = '✅ Empleado actualizado correctamente';
+END $$
+
+DELIMITER ;
+
+-- =============================================
+-- 🚗 PROCEDIMIENTO: actualizar_vehiculo
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_vehiculo (
+    IN p_nro_chasis VARCHAR(50),
+    IN p_id_modelo INT,
+    IN p_color VARCHAR(50),
+    IN p_anio YEAR,
+    IN p_precio DECIMAL(10,2),
+    IN p_estado VARCHAR(50),
+    IN p_en_stock BOOLEAN,
+    IN p_ubicacion ENUM('concesionario', 'servicio_oficial'),
+    IN p_id_concesionario INT,
+    IN p_id_servicio INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el vehículo';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE vehiculo
+    SET id_modelo = p_id_modelo,
+        color = p_color,
+        año = p_anio,
+        precio = p_precio,
+        estado = p_estado,
+        en_stock = p_en_stock,
+        ubicacion = p_ubicacion,
+        id_concesionario = p_id_concesionario,
+        id_servicio = p_id_servicio
+    WHERE nro_chasis = p_nro_chasis;
+
+    COMMIT;
+    SET p_resultado = '✅ Vehículo actualizado correctamente';
+END $$
+
+DELIMITER ;
+
+-- =============================================
+-- 🧩 PROCEDIMIENTO: actualizar_repuesto
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_repuesto (
+    IN p_id_repuesto INT,
+    IN p_descripcion VARCHAR(100),
+    IN p_precio_unidad DECIMAL(10,2),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el repuesto';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE repuesto
+    SET descripcion = p_descripcion,
+        precio_unidad = p_precio_unidad
+    WHERE id_repuesto = p_id_repuesto;
+
+    COMMIT;
+    SET p_resultado = '✅ Repuesto actualizado correctamente';
+END $$
+
+DELIMITER ;
+
+/* --------------------------------------------------------
+   🔄 Si existe, lo quitamos primero
+-------------------------------------------------------- */
+DROP PROCEDURE IF EXISTS actualizar_venta;
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_venta (
+    /* ─── datos “cabecera” ─── */
+    IN  p_id_venta        INT,
+    IN  p_fecha_venta     DATE,
+    IN  p_precio_venta    DECIMAL(10,2),
+    IN  p_forma_pago      ENUM('contado','financiera'),
+    IN  p_cuotas          INT,
+    IN  p_id_cliente      INT,
+    IN  p_id_empleado     INT,
+
+    /* ─── datos vehículo ─── */
+    IN  p_nro_chasis      VARCHAR(50),
+    IN  p_fecha_entrega   DATE,
+    IN  p_matricula       VARCHAR(20),
+    IN  p_es_stock        BOOLEAN,
+    IN  p_origen          ENUM('stock','fábrica'),
+
+    /* ─── extras ───
+       Ej.: '1,4,7'   ->   tres extras
+       envía '' (vacío) si no hay extras                 */
+    IN  p_extras_csv      TEXT,
+
+    /* ─── salida ─── */
+    OUT p_resultado       VARCHAR(255)
+)
+BEGIN
+    DECLARE v_coma INT;
+    DECLARE v_rest TEXT;
+    DECLARE v_id   INT;
+
+    /* ─────────────────────────────
+        MANEJADOR DE ERRORES
+    ───────────────────────────── */
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado := '⛔ Error al actualizar la venta';
+    END;
+
+    START TRANSACTION;
+
+    /* ─────────────────────────────
+        1. Actualizar cabecera
+    ───────────────────────────── */
+    UPDATE venta
+       SET fecha_venta  = p_fecha_venta,
+           precio_venta = p_precio_venta,
+           forma_pago   = p_forma_pago,
+           cuotas       = p_cuotas,
+           id_cliente   = p_id_cliente,
+           id_empleado  = p_id_empleado
+     WHERE id_venta     = p_id_venta;
+
+    /* ─────────────────────────────
+        2. Actualizar vehículo
+    ───────────────────────────── */
+    UPDATE venta_vehiculo
+       SET nro_chasis   = p_nro_chasis,
+           fecha_entrega= p_fecha_entrega,
+           matricula    = p_matricula,
+           es_stock     = p_es_stock,
+           origen       = p_origen
+     WHERE id_venta     = p_id_venta;
+
+    /* ─────────────────────────────
+        3. Sincronizar extras
+           (borramos todo→volvemos
+            a insertar lo recibido)
+    ───────────────────────────── */
+    DELETE FROM venta_extra
+     WHERE id_venta = p_id_venta;
+
+    SET v_rest := TRIM(BOTH ',' FROM p_extras_csv);
+    WHILE v_rest <> '' DO
+        SET v_coma := INSTR(v_rest, ',');
+        IF v_coma > 0 THEN
+            SET v_id   := SUBSTRING(v_rest,1,v_coma-1);
+            SET v_rest := SUBSTRING(v_rest,v_coma+1);
+        ELSE
+            SET v_id   := v_rest;
+            SET v_rest := '';
+        END IF;
+
+        /* evitamos blancos / null */
+        IF LENGTH(TRIM(v_id)) > 0 THEN
+            INSERT INTO venta_extra (id_venta, id_equipo, precio_extra)
+            SELECT p_id_venta,
+                   CAST(v_id AS UNSIGNED),
+                   precio
+              FROM equipo
+             WHERE id_equipo = CAST(v_id AS UNSIGNED);
+        END IF;
+    END WHILE;
+
+    /* ─────────────────────────────
+        4. Recalcular factura
+           (ON DUPLICATE KEY = update)
+    ───────────────────────────── */
+    CALL generar_factura_venta(p_id_venta);
+
+    COMMIT;
+    SET p_resultado := '✅ Venta actualizada correctamente';
+END$$
+DELIMITER ;
+
+
+
+
+-- =============================================
+-- 🔧 PROCEDIMIENTO: actualizar_reparacion
+-- =============================================
+DROP PROCEDURE IF EXISTS actualizar_reparacion_base;
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_reparacion_base (
+    IN p_id_reparacion INT,
+    IN p_fecha_entrada DATE,
+    IN p_hora_entrada TIME,
+    IN p_descripcion VARCHAR(255),
+    IN p_id_cliente INT,
+    IN p_nro_chasis VARCHAR(50),
+    IN p_diagnostico TEXT,
+    IN p_garantia VARCHAR(100),
+    IN p_mano_obra JSON,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    DECLARE total INT;
+
+    DECLARE id_mec INT;
+    DECLARE horas DECIMAL(5,2);
+    DECLARE costo DECIMAL(10,2);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar la reparación';
+    END;
+
+    START TRANSACTION;
+
+    -- 1. Actualizar cabecera incluyendo diagnóstico y garantía
+    UPDATE reparacion
+    SET
+        fecha_entrada = p_fecha_entrada,
+        hora_entrada = p_hora_entrada,
+        descripcion = p_descripcion,
+        id_cliente = p_id_cliente,
+        id_vehiculo = p_nro_chasis,
+        diagnostico = p_diagnostico,
+        garantia = p_garantia
+    WHERE id_reparacion = p_id_reparacion;
+
+    -- 2. Eliminar mano de obra anterior
+    DELETE FROM mano_obra WHERE id_reparacion = p_id_reparacion;
+
+    -- 3. Insertar nueva mano de obra si existe
+    SET total = JSON_LENGTH(p_mano_obra);
+    WHILE i < total DO
+        SET id_mec = JSON_UNQUOTE(JSON_EXTRACT(p_mano_obra, CONCAT('$[', i, '].idMecanico')));
+        SET horas  = JSON_UNQUOTE(JSON_EXTRACT(p_mano_obra, CONCAT('$[', i, '].horasTrabajadas')));
+        SET costo  = JSON_UNQUOTE(JSON_EXTRACT(p_mano_obra, CONCAT('$[', i, '].costoHora')));
+
+        INSERT INTO mano_obra (id_reparacion, id_mecanico, horas_trabajadas, costo_hora)
+        VALUES (p_id_reparacion, id_mec, horas, costo);
+
+        SET i = i + 1;
+    END WHILE;
+
+    COMMIT;
+    SET p_resultado = '✅ Reparación actualizada correctamente';
+END $$
+DELIMITER ;
+
+
+
+
+-- =============================================
+-- 🔧 DELETES
+-- =============================================
+
+-- =============================================
+-- 📄 PROCEDIMIENTO: eliminar_cliente
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_cliente (
+    IN p_id_cliente INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el cliente';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM cliente WHERE id_cliente = p_id_cliente;
+
+    COMMIT;
+    SET p_resultado = '✅ Cliente eliminado correctamente';
+END $$
+
+DELIMITER ;
+
+
+-- =============================================
+-- 👥 PROCEDIMIENTO: eliminar_empleado
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_empleado (
+    IN p_id_empleado INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el empleado';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM empleado WHERE id_empleado = p_id_empleado;
+
+    COMMIT;
+    SET p_resultado = '✅ Empleado eliminado correctamente';
+END $$
+
+DELIMITER ;
+
+
+-- =============================================
+-- 🚗 PROCEDIMIENTO: eliminar_vehiculo
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_vehiculo (
+    IN p_nro_chasis VARCHAR(50),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el vehículo';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM vehiculo WHERE nro_chasis = p_nro_chasis;
+
+    COMMIT;
+    SET p_resultado = '✅ Vehículo eliminado correctamente';
+END $$
+
+DELIMITER ;
+
+
+-- =============================================
+-- 🧩 PROCEDIMIENTO: eliminar_repuesto
+-- =============================================
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_repuesto (
+    IN p_id_repuesto INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el repuesto';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM repuesto WHERE id_repuesto = p_id_repuesto;
+
+    COMMIT;
+    SET p_resultado = '✅ Repuesto eliminado correctamente';
+END $$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS eliminar_venta;
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_venta (
+    IN  p_id_venta  INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar la venta';
+    END;
+
+    START TRANSACTION;
+
+    /* 1) Eliminar bancos que dependan de financiamientos de esta venta */
+    DELETE b
+      FROM banco b
+      JOIN financiamiento f ON b.id_financiamiento = f.id_financiamiento
+     WHERE f.id_venta = p_id_venta;
+
+    /* 2) Eliminar financiamiento asociado a la venta */
+    DELETE FROM financiamiento
+     WHERE id_venta = p_id_venta;
+
+    /* 3) Eliminar factura de venta (si existe) */
+    DELETE FROM factura_venta
+     WHERE id_venta = p_id_venta;
+
+    /* 4) Eliminar extras de venta */
+    DELETE FROM venta_extra
+     WHERE id_venta = p_id_venta;
+
+    /* 5) Eliminar relación vehículo–venta */
+    DELETE FROM venta_vehiculo
+     WHERE id_venta = p_id_venta;
+
+    /* 6) Eliminar la cabecera de la venta */
+    DELETE FROM venta
+     WHERE id_venta = p_id_venta;
+
+    COMMIT;
+    SET p_resultado = '✅ Venta eliminada correctamente';
+END$$
+DELIMITER ;
+
+
+
+
+-- =============================================
+-- 🔧 PROCEDIMIENTO: eliminar_reparacion
+-- =============================================
+DROP PROCEDURE IF EXISTS eliminar_reparacion;
+DELIMITER $$
+CREATE PROCEDURE eliminar_reparacion (
+    IN  p_id_reparacion INT,
+    OUT p_mensaje       VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_mensaje = '⛔ Error al eliminar reparación';
+    END;
+
+    START TRANSACTION;
+
+        -- 1) Factura (si existe)
+        DELETE FROM factura_reparacion
+        WHERE id_reparacion = p_id_reparacion;
+
+        -- 2) Mano de obra
+        DELETE FROM mano_obra
+        WHERE id_reparacion = p_id_reparacion;
+
+        -- 3) Detalle de repuestos
+        DELETE FROM reparacion_repuesto
+        WHERE id_reparacion = p_id_reparacion;
+
+        -- 4) Detalle de mecánicos
+        DELETE FROM reparacion_mecanico
+        WHERE id_reparacion = p_id_reparacion;
+
+        -- 5) La reparación en sí
+        DELETE FROM reparacion
+        WHERE id_reparacion = p_id_reparacion;
+
+    COMMIT;
+    SET p_mensaje = '✅ Reparación eliminada';
+END$$
+DELIMITER ;
+
+
+
+CALL listar_ventas();
+
+SHOW PROCEDURE STATUS WHERE Db = 'ProyectoDB' AND Name LIKE 'listar%';
+
+
+DELIMITER $$
+
+CREATE PROCEDURE listar_vehiculos_disponibles()
+BEGIN
+    SELECT * FROM vehiculo WHERE en_stock = TRUE;
+END $$
+
+DELIMITER ;
+
+-- 🔧 CRUD para mecanico
+
+DELIMITER $$
+CREATE PROCEDURE registrar_mecanico (
+    IN p_nombre VARCHAR(100),
+    IN p_apellido VARCHAR(100),
+    IN p_direccion VARCHAR(200),
+    IN p_telefono VARCHAR(20),
+    IN p_especialidad VARCHAR(100),
+    IN p_salario DECIMAL(10,2),
+    IN p_fecha_ingreso DATE,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el mecánico';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO mecanico (nombre, apellido, direccion, telefono, especialidad, salario, fecha_ingreso)
+    VALUES (p_nombre, p_apellido, p_direccion, p_telefono, p_especialidad, p_salario, p_fecha_ingreso);
+
+    COMMIT;
+    SET p_resultado = CONCAT('✅ Mecánico registrado con ID ', LAST_INSERT_ID());
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE listar_mecanicos()
+BEGIN
+    SELECT * FROM mecanico;
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE actualizar_mecanico (
+    IN p_id_mecanico INT,
+    IN p_nombre VARCHAR(100),
+    IN p_apellido VARCHAR(100),
+    IN p_direccion VARCHAR(200),
+    IN p_telefono VARCHAR(20),
+    IN p_especialidad VARCHAR(100),
+    IN p_salario DECIMAL(10,2),
+    IN p_fecha_ingreso DATE,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el mecánico';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE mecanico
+    SET nombre = p_nombre,
+        apellido = p_apellido,
+        direccion = p_direccion,
+        telefono = p_telefono,
+        especialidad = p_especialidad,
+        salario = p_salario,
+        fecha_ingreso = p_fecha_ingreso
+    WHERE id_mecanico = p_id_mecanico;
+
+    COMMIT;
+    SET p_resultado = '✅ Mecánico actualizado correctamente';
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE eliminar_mecanico (
+    IN p_id_mecanico INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el mecánico';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM mecanico WHERE id_mecanico = p_id_mecanico;
+
+    COMMIT;
+    SET p_resultado = '✅ Mecánico eliminado correctamente';
+END $$
+DELIMITER ;
+
+-- 🏷️ CRUD para marca
+
+DELIMITER $$
+CREATE PROCEDURE registrar_marca (
+    IN p_nombre VARCHAR(100),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar la marca';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO marca (nombre) VALUES (p_nombre);
+
+    COMMIT;
+    SET p_resultado = CONCAT('✅ Marca registrada con ID ', LAST_INSERT_ID());
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE listar_marcas()
+BEGIN
+    SELECT * FROM marca;
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE actualizar_marca (
+    IN p_id_marca INT,
+    IN p_nombre VARCHAR(100),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar la marca';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE marca SET nombre = p_nombre WHERE id_marca = p_id_marca;
+
+    COMMIT;
+    SET p_resultado = '✅ Marca actualizada correctamente';
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE eliminar_marca (
+    IN p_id_marca INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar la marca';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM marca WHERE id_marca = p_id_marca;
+
+    COMMIT;
+    SET p_resultado = '✅ Marca eliminada correctamente';
+END $$
+DELIMITER ;
+
+-- CRUD para equipo
+DELIMITER $$
+CREATE PROCEDURE registrar_equipo (
+    IN p_descripcion VARCHAR(100),
+    IN p_precio DECIMAL(10,2),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el equipo';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO equipo (descripcion, precio) VALUES (p_descripcion, p_precio);
+
+    COMMIT;
+    SET p_resultado = CONCAT('✅ Equipo registrado con ID ', LAST_INSERT_ID());
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE listar_equipos()
+BEGIN
+    SELECT * FROM equipo;
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE actualizar_equipo (
+    IN p_id_equipo INT,
+    IN p_descripcion VARCHAR(100),
+    IN p_precio DECIMAL(10,2),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el equipo';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE equipo
+    SET descripcion = p_descripcion,
+        precio = p_precio
+    WHERE id_equipo = p_id_equipo;
+
+    COMMIT;
+    SET p_resultado = '✅ Equipo actualizado correctamente';
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE eliminar_equipo (
+    IN p_id_equipo INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el equipo';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM equipo WHERE id_equipo = p_id_equipo;
+
+    COMMIT;
+    SET p_resultado = '✅ Equipo eliminado correctamente';
+END $$
+DELIMITER ;
+
+-- 🏢 CRUD para concesionario
+
+DELIMITER $$
+CREATE PROCEDURE registrar_concesionario (
+    IN p_nombre VARCHAR(100),
+    IN p_domicilio VARCHAR(200),
+    IN p_nit VARCHAR(20),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el concesionario';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO concesionario (nombre, domicilio, nit)
+    VALUES (p_nombre, p_domicilio, p_nit);
+
+    COMMIT;
+    SET p_resultado = CONCAT('✅ Concesionario registrado con ID ', LAST_INSERT_ID());
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE listar_concesionarios()
+BEGIN
+    SELECT * FROM concesionario;
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE actualizar_concesionario (
+    IN p_id_concesionario INT,
+    IN p_nombre VARCHAR(100),
+    IN p_domicilio VARCHAR(200),
+    IN p_nit VARCHAR(20),
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el concesionario';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE concesionario
+    SET nombre = p_nombre,
+        domicilio = p_domicilio,
+        nit = p_nit
+    WHERE id_concesionario = p_id_concesionario;
+
+    COMMIT;
+    SET p_resultado = '✅ Concesionario actualizado correctamente';
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE eliminar_concesionario (
+    IN p_id_concesionario INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el concesionario';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM concesionario WHERE id_concesionario = p_id_concesionario;
+
+    COMMIT;
+    SET p_resultado = '✅ Concesionario eliminado correctamente';
+END $$
+DELIMITER ;
+
+
+-- PROCEDIMIENTOS CRUD PARA LA TABLA `modelo` Y RELACIONES INTERMEDIAS
+
+DROP PROCEDURE IF EXISTS registrar_modelo;
+DELIMITER $$
+
+CREATE PROCEDURE registrar_modelo (
+    IN p_id_marca INT,
+    IN p_nombre_modelo VARCHAR(100),
+    IN p_potencia_fiscal VARCHAR(50),
+    IN p_cilindrada DECIMAL(10,2),
+    IN p_nro_puertas INT,
+    IN p_nro_ruedas INT,
+    IN p_capacidad_pasajeros INT,
+    IN p_precio_base DECIMAL(10,2),
+    IN p_descuento DECIMAL(10,2),
+    IN p_extras TEXT,
+    IN p_serie TEXT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE v_id_modelo INT;
+    DECLARE v_coma_pos INT;
+    DECLARE v_id_equipo TEXT;
+    DECLARE v_restante TEXT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el modelo';
+    END;
+
+    -- Prevención de nulos
+    IF p_extras IS NULL THEN SET p_extras = ''; END IF;
+    IF p_serie IS NULL THEN SET p_serie = ''; END IF;
+
+    START TRANSACTION;
+
+    -- Insertar en modelo
+    INSERT INTO modelo (
+        id_marca, nombre_modelo, potencia_fiscal, cilindrada,
+        nro_puertas, nro_ruedas, capacidad_pasajeros, precio_base, descuento
+    ) VALUES (
+        p_id_marca, p_nombre_modelo, p_potencia_fiscal, p_cilindrada,
+        p_nro_puertas, p_nro_ruedas, p_capacidad_pasajeros, p_precio_base, p_descuento
+    );
+
+    SET v_id_modelo = LAST_INSERT_ID();
+
+    -- Insertar extras
+    SET v_restante = TRIM(BOTH ',' FROM p_extras);
+    WHILE v_restante <> '' DO
+        SET v_coma_pos = INSTR(v_restante, ',');
+        IF v_coma_pos > 0 THEN
+            SET v_id_equipo = SUBSTRING(v_restante, 1, v_coma_pos - 1);
+            SET v_restante = SUBSTRING(v_restante, v_coma_pos + 1);
+        ELSE
+            SET v_id_equipo = v_restante;
+            SET v_restante = '';
+        END IF;
+
+        IF LENGTH(TRIM(v_id_equipo)) > 0 THEN
+            INSERT INTO modelo_equipo_extra (id_modelo, id_equipo)
+            VALUES (v_id_modelo, CAST(v_id_equipo AS UNSIGNED));
+        END IF;
+    END WHILE;
+
+    -- Insertar serie
+    SET v_restante = TRIM(BOTH ',' FROM p_serie);
+    WHILE v_restante <> '' DO
+        SET v_coma_pos = INSTR(v_restante, ',');
+        IF v_coma_pos > 0 THEN
+            SET v_id_equipo = SUBSTRING(v_restante, 1, v_coma_pos - 1);
+            SET v_restante = SUBSTRING(v_restante, v_coma_pos + 1);
+        ELSE
+            SET v_id_equipo = v_restante;
+            SET v_restante = '';
+        END IF;
+
+        IF LENGTH(TRIM(v_id_equipo)) > 0 THEN
+            INSERT INTO modelo_equipo_serie (id_modelo, id_equipo)
+            VALUES (v_id_modelo, CAST(v_id_equipo AS UNSIGNED));
+        END IF;
+    END WHILE;
+
+    COMMIT;
+    SET p_resultado = '✅ Modelo registrado correctamente';
+END$$
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS listar_modelos;
+DELIMITER $$
+
+CREATE PROCEDURE listar_modelos()
+BEGIN
+    SELECT
+        m.id_modelo,
+        m.id_marca,
+        m.nombre_modelo,
+        m.potencia_fiscal,
+        m.cilindrada,
+        m.nro_puertas,
+        m.nro_ruedas,
+        m.capacidad_pasajeros,
+        m.precio_base,
+        m.descuento,
+        -- Subconsultas que devuelven arrays en formato texto
+        (
+            SELECT GROUP_CONCAT(id_equipo)
+            FROM modelo_equipo_extra
+            WHERE id_modelo = m.id_modelo
+        ) AS extras,
+        (
+            SELECT GROUP_CONCAT(id_equipo)
+            FROM modelo_equipo_serie
+            WHERE id_modelo = m.id_modelo
+        ) AS serie
+    FROM modelo m;
+END$$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS actualizar_modelo;
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_modelo (
+    IN p_id_modelo INT,
+    IN p_id_marca INT,
+    IN p_nombre_modelo VARCHAR(100),
+    IN p_potencia_fiscal VARCHAR(50),
+    IN p_cilindrada DECIMAL(4,1),
+    IN p_nro_puertas INT,
+    IN p_nro_ruedas INT,
+    IN p_capacidad_pasajeros INT,
+    IN p_precio_base DECIMAL(10,2),
+    IN p_descuento DECIMAL(10,2),
+    IN p_extras TEXT,
+    IN p_serie TEXT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE v_coma_pos INT;
+    DECLARE v_id_equipo TEXT;
+    DECLARE v_restante TEXT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el modelo';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE modelo SET
+        id_marca = p_id_marca,
+        nombre_modelo = p_nombre_modelo,
+        potencia_fiscal = p_potencia_fiscal,
+        cilindrada = p_cilindrada,
+        nro_puertas = p_nro_puertas,
+        nro_ruedas = p_nro_ruedas,
+        capacidad_pasajeros = p_capacidad_pasajeros,
+        precio_base = p_precio_base,
+        descuento = p_descuento
+    WHERE id_modelo = p_id_modelo;
+
+    -- Limpiar anteriores
+    DELETE FROM modelo_equipo_extra WHERE id_modelo = p_id_modelo;
+    DELETE FROM modelo_equipo_serie WHERE id_modelo = p_id_modelo;
+
+    -- Insertar nuevos extras
+    SET v_restante = p_extras;
+    WHILE LENGTH(v_restante) > 0 DO
+        SET v_coma_pos = INSTR(v_restante, ',');
+        IF v_coma_pos > 0 THEN
+            SET v_id_equipo = SUBSTRING(v_restante, 1, v_coma_pos - 1);
+            SET v_restante = SUBSTRING(v_restante, v_coma_pos + 1);
+        ELSE
+            SET v_id_equipo = v_restante;
+            SET v_restante = '';
+        END IF;
+
+        IF LENGTH(TRIM(v_id_equipo)) > 0 THEN
+            INSERT INTO modelo_equipo_extra (id_modelo, id_equipo)
+            VALUES (p_id_modelo, CAST(v_id_equipo AS UNSIGNED));
+        END IF;
+    END WHILE;
+
+    -- Insertar nuevos de serie
+    SET v_restante = p_serie;
+    WHILE LENGTH(v_restante) > 0 DO
+        SET v_coma_pos = INSTR(v_restante, ',');
+        IF v_coma_pos > 0 THEN
+            SET v_id_equipo = SUBSTRING(v_restante, 1, v_coma_pos - 1);
+            SET v_restante = SUBSTRING(v_restante, v_coma_pos + 1);
+        ELSE
+            SET v_id_equipo = v_restante;
+            SET v_restante = '';
+        END IF;
+
+        IF LENGTH(TRIM(v_id_equipo)) > 0 THEN
+            INSERT INTO modelo_equipo_serie (id_modelo, id_equipo)
+            VALUES (p_id_modelo, CAST(v_id_equipo AS UNSIGNED));
+        END IF;
+    END WHILE;
+
+    COMMIT;
+    SET p_resultado = '✅ Modelo actualizado correctamente';
+END$$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS eliminar_modelo;
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_modelo (
+    IN p_id_modelo INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el modelo';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM modelo_equipo_extra WHERE id_modelo = p_id_modelo;
+    DELETE FROM modelo_equipo_serie WHERE id_modelo = p_id_modelo;
+    DELETE FROM modelo WHERE id_modelo = p_id_modelo;
+
+    COMMIT;
+    SET p_resultado = '✅ Modelo eliminado correctamente';
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE registrar_servicio_oficial (
+    IN p_nombre VARCHAR(100),
+    IN p_domicilio VARCHAR(200),
+    IN p_nit VARCHAR(20),
+    IN p_id_concesionario INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el servicio oficial';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO servicio_oficial (nombre, domicilio, nit, id_concesionario)
+    VALUES (p_nombre, p_domicilio, p_nit, p_id_concesionario);
+
+    COMMIT;
+    SET p_resultado = CONCAT('✅ Servicio oficial registrado con ID ', LAST_INSERT_ID());
+END $$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE listar_servicios_oficiales()
+BEGIN
+    SELECT
+        s.id_servicio,
+        s.nombre,
+        s.domicilio,
+        s.nit,
+        c.id_concesionario,
+        c.nombre AS nombre_concesionario
+    FROM servicio_oficial s
+    JOIN concesionario c ON s.id_concesionario = c.id_concesionario;
+END $$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_servicio_oficial (
+    IN p_id_servicio INT,
+    IN p_nombre VARCHAR(100),
+    IN p_domicilio VARCHAR(200),
+    IN p_nit VARCHAR(20),
+    IN p_id_concesionario INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el servicio oficial';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE servicio_oficial
+    SET nombre = p_nombre,
+        domicilio = p_domicilio,
+        nit = p_nit,
+        id_concesionario = p_id_concesionario
+    WHERE id_servicio = p_id_servicio;
+
+    COMMIT;
+    SET p_resultado = '✅ Servicio oficial actualizado correctamente';
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_servicio_oficial (
+    IN p_id_servicio INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el servicio oficial';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM servicio_oficial WHERE id_servicio = p_id_servicio;
+
+    COMMIT;
+    SET p_resultado = '✅ Servicio oficial eliminado correctamente';
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE listar_facturas_venta()
+BEGIN
+    SELECT
+        fv.id_factura,
+        fv.id_venta,
+        CONCAT(c.nombre, ' ', c.apellido) AS cliente,
+        fv.total,
+        fv.iva,
+        fv.precio_final
+    FROM factura_venta fv
+    JOIN venta v ON fv.id_venta = v.id_venta
+    JOIN cliente c ON v.id_cliente = c.id_cliente;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE listar_facturas_reparacion()
+BEGIN
+    SELECT
+        fr.id_factura,
+        fr.id_reparacion,
+        CONCAT(c.nombre, ' ', c.apellido) AS cliente,
+        fr.total,
+        fr.iva,
+        fr.precio_final
+    FROM factura_reparacion fr
+    JOIN reparacion r ON fr.id_reparacion = r.id_reparacion
+    JOIN cliente c ON r.id_cliente = c.id_cliente;
+END $$
+
+DELIMITER ;
+CALL listar_facturas_venta();
+CALL listar_facturas_reparacion();
+
+DROP PROCEDURE IF EXISTS generar_factura_reparacion;
+DELIMITER $$
+
+CREATE PROCEDURE generar_factura_reparacion(IN p_id_reparacion INT)
+BEGIN
+    DECLARE v_total_repuestos DECIMAL(10,2);
+    DECLARE v_total_mano_obra DECIMAL(10,2);
+    DECLARE v_total           DECIMAL(10,2);
+    DECLARE v_iva             DECIMAL(10,2);
+    DECLARE v_precio_final    DECIMAL(10,2);
+
+    -- 1) Sumar repuestos usados en la reparación
+    SELECT IFNULL(SUM(r.precio_unidad), 0)
+      INTO v_total_repuestos
+      FROM reparacion_repuesto rr
+      JOIN repuesto r ON rr.id_repuesto = r.id_repuesto
+     WHERE rr.id_reparacion = p_id_reparacion;
+
+    -- 2) Sumar mano de obra real desde tabla mano_obra
+    SELECT IFNULL(SUM(mo.horas_trabajadas * mo.costo_hora), 0)
+      INTO v_total_mano_obra
+      FROM mano_obra mo
+     WHERE mo.id_reparacion = p_id_reparacion;
+
+    -- 3) Total general
+    SET v_total = v_total_repuestos + v_total_mano_obra;
+    SET v_iva = v_total * 0.13;
+    SET v_precio_final = v_total + v_iva;
+
+    -- 4) Insertar o actualizar factura
+    INSERT INTO factura_reparacion(id_reparacion, total, iva, precio_final)
+    VALUES (p_id_reparacion, v_total, v_iva, v_precio_final)
+    ON DUPLICATE KEY UPDATE
+        total        = VALUES(total),
+        iva          = VALUES(iva),
+        precio_final = VALUES(precio_final);
+END$$
+
+DELIMITER ;
+
+
+
+DROP PROCEDURE IF EXISTS generar_factura_venta;
+DELIMITER $$
+CREATE PROCEDURE generar_factura_venta (
+    IN p_id_venta INT
+)
+BEGIN
+    DECLARE v_precio_base   DECIMAL(10,2);
+    DECLARE v_total         DECIMAL(10,2);
+    DECLARE v_iva           DECIMAL(10,2);
+    DECLARE v_precio_final  DECIMAL(10,2);
+
+    -- 1) Obtener el “precio de venta” (ya incluye extras) de la tabla venta
+    SELECT precio_venta
+      INTO v_precio_base
+      FROM venta
+     WHERE id_venta = p_id_venta;
+
+    -- 2) Calcular total = precio_base (ya lleva extras), IVA y precio_final
+    SET v_total        = v_precio_base;
+    SET v_iva          = v_total * 0.13;
+    SET v_precio_final = v_total + v_iva;
+
+    -- 3) Insertar o actualizar en factura_venta
+    INSERT INTO factura_venta (id_venta, total, iva, precio_final)
+    VALUES (p_id_venta, v_total, v_iva, v_precio_final)
+    ON DUPLICATE KEY UPDATE
+        total        = VALUES(total),
+        iva          = VALUES(iva),
+        precio_final = VALUES(precio_final);
+END $$
+DELIMITER ;
+
+
+
+DROP PROCEDURE IF EXISTS registrar_financiamiento;
+DELIMITER $$
+
+CREATE PROCEDURE registrar_financiamiento (
+    IN p_tipo_financiamiento VARCHAR(100),
+    IN p_entidad_financiera VARCHAR(100),
+    IN p_monto DECIMAL(10,2),
+    IN p_cuotas INT,
+    IN p_tasa_interes DECIMAL(5,2),
+    IN p_plazo INT,
+    IN p_id_venta INT,
+    OUT p_resultado VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '❌ Error al registrar el financiamiento';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO financiamiento (tipo_financiamiento, entidad_financiera, monto, cuotas, tasa_interes, plazo, id_venta)
+    VALUES (p_tipo_financiamiento, p_entidad_financiera, p_monto, p_cuotas, p_tasa_interes, p_plazo, p_id_venta);
+
+    COMMIT;
+    SET p_resultado = '✅ Financiamiento registrado correctamente';
+END $$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS listar_financiamientos;
+DELIMITER $$
+
+CREATE PROCEDURE listar_financiamientos()
+BEGIN
+    SELECT
+        f.id_financiamiento,
+        f.tipo_financiamiento,
+        f.entidad_financiera,
+        f.monto,
+        f.cuotas,
+        f.tasa_interes,
+        f.plazo,
+        f.id_venta,
+        c.nombre AS cliente,
+        c.apellido AS cliente_apellido
+    FROM financiamiento f
+    JOIN venta v ON f.id_venta = v.id_venta
+    JOIN cliente c ON v.id_cliente = c.id_cliente;
+END $$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS actualizar_financiamiento;
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_financiamiento (
+    IN p_id_financiamiento INT,
+    IN p_tipo_financiamiento VARCHAR(100),
+    IN p_entidad_financiera VARCHAR(100),
+    IN p_monto DECIMAL(10,2),
+    IN p_cuotas INT,
+    IN p_tasa_interes DECIMAL(5,2),
+    IN p_plazo INT,
+    IN p_id_venta INT,
+    OUT p_resultado VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '❌ Error al actualizar el financiamiento';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE financiamiento
+    SET tipo_financiamiento = p_tipo_financiamiento,
+        entidad_financiera = p_entidad_financiera,
+        monto = p_monto,
+        cuotas = p_cuotas,
+        tasa_interes = p_tasa_interes,
+        plazo = p_plazo,
+        id_venta = p_id_venta
+    WHERE id_financiamiento = p_id_financiamiento;
+
+    COMMIT;
+    SET p_resultado = '✅ Financiamiento actualizado correctamente';
+END $$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS eliminar_financiamiento;
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_financiamiento (
+    IN p_id_financiamiento INT,
+    OUT p_resultado VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '❌ Error al eliminar el financiamiento';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM financiamiento WHERE id_financiamiento = p_id_financiamiento;
+
+    COMMIT;
+    SET p_resultado = '✅ Financiamiento eliminado correctamente';
+END $$
+
+DELIMITER ;
+
+CALL listar_financiamientos();
+
+DROP PROCEDURE IF EXISTS registrar_banco;
+DELIMITER $$
+
+CREATE PROCEDURE registrar_banco (
+    IN p_nombre VARCHAR(100),
+    IN p_numero_cuenta VARCHAR(100),
+    IN p_id_financiamiento INT,
+    OUT p_resultado VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '❌ Error al registrar el banco';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO banco (nombre, numero_cuenta, id_financiamiento)
+    VALUES (p_nombre, p_numero_cuenta, p_id_financiamiento);
+
+    COMMIT;
+    SET p_resultado = '✅ Banco registrado correctamente';
+END $$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS listar_bancos;
+DELIMITER $$
+
+CREATE PROCEDURE listar_bancos()
+BEGIN
+    SELECT
+        b.id_banco,
+        b.nombre,
+        b.numero_cuenta,
+        b.id_financiamiento,
+        f.monto AS monto_financiado
+    FROM banco b
+    JOIN financiamiento f ON b.id_financiamiento = f.id_financiamiento;
+END $$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS actualizar_banco;
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_banco (
+    IN p_id_banco INT,
+    IN p_nombre VARCHAR(100),
+    IN p_numero_cuenta VARCHAR(100),
+    IN p_id_financiamiento INT,
+    OUT p_resultado VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '❌ Error al actualizar el banco';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE banco
+    SET nombre = p_nombre,
+        numero_cuenta = p_numero_cuenta,
+        id_financiamiento = p_id_financiamiento
+    WHERE id_banco = p_id_banco;
+
+    COMMIT;
+    SET p_resultado = '✅ Banco actualizado correctamente';
+END $$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS eliminar_banco;
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_banco (
+    IN p_id_banco INT,
+    OUT p_resultado VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '❌ Error al eliminar el banco';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM banco WHERE id_banco = p_id_banco;
+
+    COMMIT;
+    SET p_resultado = '✅ Banco eliminado correctamente';
+END $$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS registrar_pedido_importacion;
+
+DELIMITER $$
+
+CREATE PROCEDURE registrar_pedido_importacion (
+    IN p_id_repuesto INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el pedido';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO pedido_importacion (id_repuesto, fecha_solicitud, estado)
+    VALUES (p_id_repuesto, CURDATE(), 'pendiente');
+
+    COMMIT;
+    SET p_resultado = '✅ Pedido de importación registrado correctamente';
+END $$
+
+DELIMITER ;
+
+-- Ver todos los pedidos
+SELECT
+    pi.id_pedido,
+    r.descripcion AS repuesto,
+    pi.fecha_solicitud,
+    pi.estado,
+    pi.fecha_entrega
+FROM pedido_importacion pi
+JOIN repuesto r ON pi.id_repuesto = r.id_repuesto;
+
+DROP PROCEDURE IF EXISTS actualizar_pedido_importacion;
+DELIMITER $$
+
+CREATE PROCEDURE actualizar_pedido_importacion (
+    IN p_id_pedido INT,
+    IN p_estado ENUM('pendiente', 'recibido', 'entregado'),
+    IN p_fecha_entrega DATE,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el pedido';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE pedido_importacion
+    SET estado = p_estado,
+        fecha_entrega = p_fecha_entrega
+    WHERE id_pedido = p_id_pedido;
+
+    COMMIT;
+    SET p_resultado = '✅ Pedido actualizado correctamente';
+END$$
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS eliminar_pedido_importacion;
+DELIMITER $$
+
+CREATE PROCEDURE eliminar_pedido_importacion (
+    IN p_id_pedido INT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al eliminar el pedido';
+    END;
+
+    START TRANSACTION;
+
+    DELETE FROM pedido_importacion WHERE id_pedido = p_id_pedido;
+
+    COMMIT;
+    SET p_resultado = '✅ Pedido eliminado correctamente';
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE listar_financiamientos_disponibles()
+BEGIN
+    SELECT f.*
+    FROM financiamiento f
+    LEFT JOIN banco b ON f.id_financiamiento = b.id_financiamiento
+    WHERE b.id_financiamiento IS NULL;
+END $$
+
+DELIMITER ;
+
+SHOW CREATE PROCEDURE registrar_modelo;
+CALL registrar_modelo;
+
+ALTER TABLE factura_reparacion
+ADD UNIQUE KEY unq_factura_reparacion (id_reparacion);
+
+ALTER TABLE factura_venta
+ADD UNIQUE KEY unq_factura_por_venta (id_venta);
+
+ALTER TABLE reparacion
+ADD COLUMN diagnostico TEXT,
+ADD COLUMN garantia VARCHAR(100);
+
+-- =============================================
+-- 🔁 1. REGISTRAR PEDIDO DE IMPORTACIÓN
+-- =============================================
+DROP PROCEDURE IF EXISTS registrar_pedido_importacion;
+DELIMITER $$
+CREATE PROCEDURE registrar_pedido_importacion (
+    IN p_id_repuesto INT,
+    IN p_fecha_solicitud DATE,
+    OUT p_resultado VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al registrar el pedido';
+    END;
+
+    START TRANSACTION;
+
+    INSERT INTO pedido_importacion (id_repuesto, fecha_solicitud, estado)
+    VALUES (p_id_repuesto, p_fecha_solicitud, 'pendiente');
+
+    COMMIT;
+    SET p_resultado = '✅ Pedido registrado correctamente';
+END$$
+DELIMITER ;
+
+-- =============================================
+-- 🔁 2. ACTUALIZAR ESTADO DEL PEDIDO
+-- =============================================
+DROP PROCEDURE IF EXISTS actualizar_estado_pedido;
+DELIMITER $$
+CREATE PROCEDURE actualizar_estado_pedido (
+    IN p_id_pedido INT,
+    IN p_nuevo_estado VARCHAR(50),
+    IN p_fecha_entrega DATE,
+    OUT p_resultado VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = '⛔ Error al actualizar el estado';
+    END;
+
+    START TRANSACTION;
+
+    UPDATE pedido_importacion
+    SET estado = p_nuevo_estado,
+        fecha_entrega = p_fecha_entrega
+    WHERE id_pedido = p_id_pedido;
+
+    COMMIT;
+    SET p_resultado = '✅ Estado del pedido actualizado';
+END$$
+DELIMITER ;
+
+-- =============================================
+-- 📄 3. LISTAR TODOS LOS PEDIDOS
+-- =============================================
+DROP PROCEDURE IF EXISTS listar_pedidos_importacion;
+DELIMITER $$
+CREATE PROCEDURE listar_pedidos_importacion()
+BEGIN
+    SELECT
+        p.id_pedido,
+        p.id_repuesto,
+        r.descripcion AS repuesto,
+        p.fecha_solicitud,
+        p.estado,
+        p.fecha_entrega
+    FROM pedido_importacion p
+    JOIN repuesto r ON p.id_repuesto = r.id_repuesto
+    ORDER BY p.id_pedido DESC;
+END$$
+DELIMITER ;
+
+-- =============================================
+-- 🔍 4. VERIFICAR SI UN REPUESTO TIENE PEDIDO PENDIENTE
+-- =============================================
+DROP PROCEDURE IF EXISTS verificar_pedido_pendiente;
+DELIMITER $$
+CREATE PROCEDURE verificar_pedido_pendiente (
+    IN p_id_repuesto INT
+)
+BEGIN
+    SELECT
+        id_pedido,
+        fecha_solicitud,
+        estado
+    FROM pedido_importacion
+    WHERE id_repuesto = p_id_repuesto
+      AND estado = 'pendiente';
+END$$
+DELIMITER ;
+
+
+-- VISTA XDXD
+CREATE OR REPLACE VIEW vista_pedidos_importacion AS
+SELECT
+    p.id_pedido AS idPedido,
+    p.id_repuesto AS idRepuesto,
+    r.descripcion AS descripcionRepuesto,
+    p.estado,
+    p.fecha_solicitud,
+    p.fecha_entrega
+FROM
+    pedido_importacion p
+JOIN
+    repuesto r ON p.id_repuesto = r.id_repuesto;
+-- =============================================
+-- 📦 PROCEDIMIENTO: reporte_resumen_pedidos_importacion
+-- =============================================
+DROP PROCEDURE IF EXISTS reporte_resumen_pedidos_importacion;
+DELIMITER $$
+
+CREATE PROCEDURE reporte_resumen_pedidos_importacion()
+BEGIN
+    SELECT
+        rep.descripcion AS descripcion_repuesto,
+        SUM(CASE WHEN p.estado = 'pendiente' THEN 1 ELSE 0 END) AS total_pendientes,
+        SUM(CASE WHEN p.estado = 'entregado' THEN 1 ELSE 0 END) AS total_entregados
+    FROM pedido_importacion p
+    JOIN repuesto rep ON p.id_repuesto = rep.id_repuesto
+    GROUP BY rep.descripcion;
+END$$
+
+DELIMITER ;
+
+
+
+
+
